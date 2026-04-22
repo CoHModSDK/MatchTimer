@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="lib">
+      <UniqueIdentifier>{d3b4ace0-45ed-48a2-b773-cb89ce49be21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{5ee34c21-802d-4860-b1aa-601c4662fbc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\CoHModSDK">
+      <UniqueIdentifier>{91cbf133-813a-45a4-9207-1de7afd96e37}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\CoHModSDK\include">
+      <UniqueIdentifier>{a91097ea-b5c0-4101-a505-7dd0de95d3c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\CoHModSDK\lib">
+      <UniqueIdentifier>{5670fa6a-64f4-4431-a45e-3646fc102c46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="lib\CoHModSDK\lib\x86">
+      <UniqueIdentifier>{d93a870b-5dbd-4eee-90da-5c3b3e175eed}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\dllmain.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="lib\CoHModSDK\include\CoHModSDK.hpp">
+      <Filter>lib\CoHModSDK\include</Filter>
+    </ClInclude>
+    <ClInclude Include="res\resource.h">
+      <Filter>res</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="lib\CoHModSDK\lib\x86\CoHModSDK.lib">
+      <Filter>lib\CoHModSDK\lib\x86</Filter>
+    </Library>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="LICENSE" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="res\resource.rc">
+      <Filter>res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
