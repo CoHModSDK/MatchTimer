@@ -1,0 +1,86 @@
+Screen =
+{
+	version = 4,
+	native_aspect = 1.77778,
+	Widgets =
+	{
+		type = "Group",
+		name = "matchtimer_root",
+		position =
+		{
+			0,
+			0,
+		},
+		size =
+		{
+			1,
+			1,
+		},
+		HitArea =
+		{
+		},
+		Children =
+		{
+			{
+				visible = false,
+				type = "TextLabel",
+				text = "00:00:00",
+				name = "matchtimer_label",
+				position =
+				{
+					0.35000,
+					0.00600,
+				},
+				xAlignToParent = "Middle",
+				HitArea =
+				{
+				},
+				Presentation =
+				{
+					Art =
+					{
+						{
+							type = "Text",
+							textColourBottom =
+							{
+								180,
+								180,
+								180,
+								255,
+							},
+							shadermode = 0,
+							textColourTop =
+							{
+								255,
+								255,
+								255,
+								255,
+							},
+							horzAlign = "Centre",
+							ID = 2065,
+							fontname = "impact_20",
+							dropShadow = true,
+							padding =
+							{
+								0.00250,
+								0.00330,
+							},
+							states =
+							{
+								"Normal",
+								"Active",
+								"Hover",
+								"Disabled",
+							},
+						},
+					},
+				},
+				size =
+				{
+					0.30000,
+					0.04000,
+				},
+			},
+		},
+	},
+}
