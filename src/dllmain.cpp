@@ -393,7 +393,6 @@ namespace {
         }
 
         void* widget = nullptr;
-#if defined(_M_IX86)
         void* createFunction = g_widgetFactoryCreateAddress;
         __asm {
             mov edi, widgetTypeName
@@ -402,9 +401,6 @@ namespace {
             call eax
             mov widget, eax
         }
-#else
-        (void)widgetTypeName;
-#endif
         return widget;
     }
 
@@ -438,7 +434,6 @@ namespace {
             return false;
         }
 
-#if defined(_M_IX86)
         void* addRenderChildFunction = g_addRenderChildAddress;
         __asm {
             mov edi, parentRenderObject
@@ -448,12 +443,6 @@ namespace {
             call eax
         }
         return true;
-#else
-        (void)parentRenderObject;
-        (void)childWidget;
-        (void)insertionIndex;
-        return false;
-#endif
     }
 
     bool AttachRenderChild(void* parentWidget, void* childWidget) {
