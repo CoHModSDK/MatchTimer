@@ -176,17 +176,8 @@ namespace {
     bool g_uiLabelTextInitialized = false;
 
     template <typename T>
-    T ResolveExport(HMODULE module, const char* exportName) {
-        if ((module == nullptr) || (exportName == nullptr)) {
-            return nullptr;
-        }
-
-        return reinterpret_cast<T>(GetProcAddress(module, exportName));
-    }
-
-    template <typename T>
     bool ResolveRequiredExport(HMODULE module, const char* moduleName, const char* exportName, T& outFunction) {
-        outFunction = ResolveExport<T>(module, exportName);
+        outFunction = ModSDK::Memory::ResolveExport<T>(module, exportName);
         if (outFunction != nullptr) {
             return true;
         }
@@ -231,7 +222,7 @@ namespace {
     }
 
     bool InstallExportHook(HMODULE module, const char* exportName, void* detour, void** originalFunction, const char* hookDisplayName) {
-        void* target = ResolveExport<void*>(module, exportName);
+        void* target = ModSDK::Memory::ResolveExport<void*>(module, exportName);
         if (target == nullptr) {
             char message[256] = {};
             std::snprintf(message, sizeof(message), "Match Timer failed to resolve %s", hookDisplayName);
@@ -273,7 +264,7 @@ namespace {
             if (milliseconds > 0u) {
                 char message[96] = {};
                 std::snprintf(message, sizeof(message), "Match Timer captured game time %.3f seconds", gameTimeSeconds);
-                LogOnce(g_loggedTimeCapture, CoHModSDKLogLevel_Info, message);
+                LogOnce(g_loggedTimeCapture, CoHModSDKLogLevel_Debug, message);
             }
         }
     }
@@ -347,7 +338,7 @@ namespace {
         ZeroWidgetField(g_timerLabelRaw, hitAreaOffset);
         LogOnce(
             g_loggedTimerLabelDetach,
-            CoHModSDKLogLevel_Info,
+            CoHModSDKLogLevel_Debug,
             "Match Timer detached shared presentation state from the native Taskbar timer label before unload"
         );
     }
@@ -689,7 +680,7 @@ namespace {
         g_uiLabelTextInitialized = true;
         g_lastUiLabelVisible = true;
         g_lastUiLabelSeconds = totalSeconds;
-        LogOnce(g_loggedTimerLabelUpdated, CoHModSDKLogLevel_Info, "Match Timer updated the native Taskbar timer label");
+        LogOnce(g_loggedTimerLabelUpdated, CoHModSDKLogLevel_Debug, "Match Timer updated the native Taskbar timer label");
     }
 
     void __fastcall HookedWorldSimulate(void* world, void*) {
@@ -707,7 +698,6 @@ namespace {
         g_matchActive.store(true, std::memory_order_relaxed);
         g_gameOver.store(false, std::memory_order_relaxed);
         RefreshCachedMatchTime(simManager);
-        LogOnce(g_loggedWorldSimulate, CoHModSDKLogLevel_Info, "Match Timer World::Simulate hook is active");
     }
 
     void __fastcall HookedClearGameTicks(void* simManager, void*) {
@@ -727,8 +717,6 @@ namespace {
     }
 
     void __fastcall HookedScreenManagerDraw(void* screenManager, void*, float deltaSeconds) {
-        LogOnce(g_loggedUiDrawHook, CoHModSDKLogLevel_Info, "Match Timer UI::ScreenManager::Draw hook is active");
-
         const bool shouldShow = ShouldShowTimer();
         if (EnsureTaskbarTimerLabel(screenManager)) {
             ApplyTimerLabelVisibility(shouldShow);
@@ -778,8 +766,8 @@ namespace {
             return ShowAndLogError("Match Timer failed to load SimEngine.dll");
         }
 
-        g_getGameTime = ResolveExport<SimManagerGetGameTimeFn>(simEngineModule, kGetGameTimeExportName);
-        g_getWorldSimManager = ResolveExport<WorldGetSimManagerFn>(simEngineModule, kWorldGetSimManagerExportName);
+        g_getGameTime = ModSDK::Memory::ResolveExport<SimManagerGetGameTimeFn>(simEngineModule, kGetGameTimeExportName);
+        g_getWorldSimManager = ModSDK::Memory::ResolveExport<WorldGetSimManagerFn>(simEngineModule, kWorldGetSimManagerExportName);
         if ((g_getGameTime == nullptr) || (g_getWorldSimManager == nullptr)) {
             return ShowAndLogError("Match Timer failed to resolve SimManager timer exports");
         }
@@ -811,7 +799,6 @@ namespace {
             return false;
         }
 
-		ModSDK::Runtime::LogInfo("Match Timer hooked SimEngine timer exports");
         return true;
     }
 
@@ -851,8 +838,8 @@ namespace {
             return false;
         }
 
-        g_textLabelSetAutoSize = ResolveExport<TextLabelSetAutoSizeFn>(userInterfaceModule, kTextLabelSetAutoSizeExportName);
-        g_textLabelSetMultiline = ResolveExport<TextLabelSetMultilineFn>(userInterfaceModule, kTextLabelSetMultilineExportName);
+        g_textLabelSetAutoSize = ModSDK::Memory::ResolveExport<TextLabelSetAutoSizeFn>(userInterfaceModule, kTextLabelSetAutoSizeExportName);
+        g_textLabelSetMultiline = ModSDK::Memory::ResolveExport<TextLabelSetMultilineFn>(userInterfaceModule, kTextLabelSetMultilineExportName);
 
         const std::uintptr_t userInterfaceBase = reinterpret_cast<std::uintptr_t>(userInterfaceModule);
         g_widgetFactoryCreateAddress = reinterpret_cast<void*>(userInterfaceBase + kWidgetFactoryCreateRva);
@@ -887,7 +874,6 @@ namespace {
             return false;
         }
 
-        LogOnce(g_loggedUiHooksInstalled, CoHModSDKLogLevel_Info, "Match Timer hooked UI::ScreenManager::Draw for a native Taskbar timer");
         return true;
     }
 
