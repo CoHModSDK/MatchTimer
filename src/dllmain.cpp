@@ -40,6 +40,7 @@ namespace {
     using WidgetProxyBindFn = void(__thiscall*)(void*, void*);
     using WidgetProxySetVisibleFn = void(__thiscall*)(void*, bool);
     using WidgetProxySetEnabledFn = void(__thiscall*)(void*, bool);
+    using WidgetProxySetTextHAlignFn = void(__thiscall*)(void*, int, const char*);
     using TextLabelCtorFn = void(__thiscall*)(void*);
     using TextLabelDtorFn = void(__thiscall*)(void*);
     using TextLabelSetTextFn = void(__thiscall*)(void*, const void*);
@@ -77,6 +78,7 @@ namespace {
     constexpr char kWidgetProxyBindExportName[] = "?Bind@WidgetProxy@UI@@IAEXPAVWidget@2@@Z";
     constexpr char kWidgetProxySetVisibleExportName[] = "?SetVisible@WidgetProxy@UI@@UAEX_N@Z";
     constexpr char kWidgetProxySetEnabledExportName[] = "?SetEnabled@WidgetProxy@UI@@UAEX_N@Z";
+    constexpr char kWidgetProxySetTextHAlignExportName[] = "?SetTextHAlign@WidgetProxy@UI@@QAEXW4HAlign@RenderProxy@@PBD@Z";
     constexpr char kTextLabelCtorExportName[] = "??0TextLabel@UI@@QAE@XZ";
     constexpr char kTextLabelDtorExportName[] = "??1TextLabel@UI@@UAE@XZ";
     constexpr char kTextLabelSetTextExportName[] = "?SetText@TextLabel@UI@@QAEXABVLocString@@@Z";
@@ -102,10 +104,12 @@ namespace {
     constexpr char kTextLabelWidgetTypeName[] = "TextLabel";
     constexpr char kTimerPresentationDonorName[] = "txtInfo";
 
-    constexpr float kTimerLabelPositionX = 0.30260f;
-    constexpr float kTimerLabelPositionY = 0.00000f;
-    constexpr float kTimerLabelSizeX = 0.39480f;
+    constexpr float kTimerLabelPositionX = 0.47500f;
+    constexpr float kTimerLabelPositionY = -0.02000f;
+    constexpr float kTimerLabelSizeX = 0.14000f;
     constexpr float kTimerLabelSizeY = 0.12600f;
+
+    constexpr int kRenderProxyHAlignLeft = 0;
 
     constexpr std::size_t kOpaqueTextLabelStorageSize = 8192u;
     constexpr std::size_t kLocStringStorageSize = 256u;
@@ -128,6 +132,7 @@ namespace {
     WidgetProxyBindFn g_widgetProxyBind = nullptr;
     WidgetProxySetVisibleFn g_widgetProxySetVisible = nullptr;
     WidgetProxySetEnabledFn g_widgetProxySetEnabled = nullptr;
+    WidgetProxySetTextHAlignFn g_widgetProxySetTextHAlign = nullptr;
     TextLabelCtorFn g_textLabelCtor = nullptr;
     TextLabelDtorFn g_textLabelDtor = nullptr;
     TextLabelSetTextFn g_textLabelSetText = nullptr;
@@ -543,6 +548,11 @@ namespace {
             g_textLabelSetMultiline(g_timerLabelProxyStorage.data(), false);
         }
 
+        if (g_widgetProxySetTextHAlign != nullptr) {
+            // Anchor the changing digits against the right edge of the fixed label box.
+            g_widgetProxySetTextHAlign(g_timerLabelProxyStorage.data(), kRenderProxyHAlignLeft, nullptr);
+        }
+
         ApplyTimerLabelVisibility(false);
         LogOnce(g_loggedTimerLabelBound, CoHModSDKLogLevel_Info, "Match Timer bound the native Taskbar timer label");
         return true;
@@ -828,6 +838,7 @@ namespace {
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxyBindExportName, g_widgetProxyBind) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxySetVisibleExportName, g_widgetProxySetVisible) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxySetEnabledExportName, g_widgetProxySetEnabled) &&
+            ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxySetTextHAlignExportName, g_widgetProxySetTextHAlign) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kTextLabelCtorExportName, g_textLabelCtor) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kTextLabelDtorExportName, g_textLabelDtor) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kTextLabelSetTextExportName, g_textLabelSetText) &&
