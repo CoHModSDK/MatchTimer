@@ -40,6 +40,7 @@ namespace {
     using WidgetProxyBindFn = void(__thiscall*)(void*, void*);
     using WidgetProxySetVisibleFn = void(__thiscall*)(void*, bool);
     using WidgetProxySetEnabledFn = void(__thiscall*)(void*, bool);
+    using WidgetProxySetTextHAlignFn = void(__thiscall*)(void*, int, const char*);
     using TextLabelCtorFn = void(__thiscall*)(void*);
     using TextLabelDtorFn = void(__thiscall*)(void*);
     using TextLabelSetTextFn = void(__thiscall*)(void*, const void*);
@@ -77,6 +78,7 @@ namespace {
     constexpr char kWidgetProxyBindExportName[] = "?Bind@WidgetProxy@UI@@IAEXPAVWidget@2@@Z";
     constexpr char kWidgetProxySetVisibleExportName[] = "?SetVisible@WidgetProxy@UI@@UAEX_N@Z";
     constexpr char kWidgetProxySetEnabledExportName[] = "?SetEnabled@WidgetProxy@UI@@UAEX_N@Z";
+    constexpr char kWidgetProxySetTextHAlignExportName[] = "?SetTextHAlign@WidgetProxy@UI@@QAEXW4HAlign@RenderProxy@@PBD@Z";
     constexpr char kTextLabelCtorExportName[] = "??0TextLabel@UI@@QAE@XZ";
     constexpr char kTextLabelDtorExportName[] = "??1TextLabel@UI@@UAE@XZ";
     constexpr char kTextLabelSetTextExportName[] = "?SetText@TextLabel@UI@@QAEXABVLocString@@@Z";
@@ -102,10 +104,12 @@ namespace {
     constexpr char kTextLabelWidgetTypeName[] = "TextLabel";
     constexpr char kTimerPresentationDonorName[] = "txtInfo";
 
-    constexpr float kTimerLabelPositionX = 0.30260f;
-    constexpr float kTimerLabelPositionY = 0.00000f;
-    constexpr float kTimerLabelSizeX = 0.39480f;
+    constexpr float kTimerLabelPositionX = 0.47500f;
+    constexpr float kTimerLabelPositionY = -0.02000f;
+    constexpr float kTimerLabelSizeX = 0.14000f;
     constexpr float kTimerLabelSizeY = 0.12600f;
+
+    constexpr int kRenderProxyHAlignLeft = 0;
 
     constexpr std::size_t kOpaqueTextLabelStorageSize = 8192u;
     constexpr std::size_t kLocStringStorageSize = 256u;
@@ -128,6 +132,7 @@ namespace {
     WidgetProxyBindFn g_widgetProxyBind = nullptr;
     WidgetProxySetVisibleFn g_widgetProxySetVisible = nullptr;
     WidgetProxySetEnabledFn g_widgetProxySetEnabled = nullptr;
+    WidgetProxySetTextHAlignFn g_widgetProxySetTextHAlign = nullptr;
     TextLabelCtorFn g_textLabelCtor = nullptr;
     TextLabelDtorFn g_textLabelDtor = nullptr;
     TextLabelSetTextFn g_textLabelSetText = nullptr;
@@ -171,17 +176,8 @@ namespace {
     bool g_uiLabelTextInitialized = false;
 
     template <typename T>
-    T ResolveExport(HMODULE module, const char* exportName) {
-        if ((module == nullptr) || (exportName == nullptr)) {
-            return nullptr;
-        }
-
-        return reinterpret_cast<T>(GetProcAddress(module, exportName));
-    }
-
-    template <typename T>
     bool ResolveRequiredExport(HMODULE module, const char* moduleName, const char* exportName, T& outFunction) {
-        outFunction = ResolveExport<T>(module, exportName);
+        outFunction = ModSDK::Memory::ResolveExport<T>(module, exportName);
         if (outFunction != nullptr) {
             return true;
         }
@@ -226,7 +222,7 @@ namespace {
     }
 
     bool InstallExportHook(HMODULE module, const char* exportName, void* detour, void** originalFunction, const char* hookDisplayName) {
-        void* target = ResolveExport<void*>(module, exportName);
+        void* target = ModSDK::Memory::ResolveExport<void*>(module, exportName);
         if (target == nullptr) {
             char message[256] = {};
             std::snprintf(message, sizeof(message), "Match Timer failed to resolve %s", hookDisplayName);
@@ -268,7 +264,7 @@ namespace {
             if (milliseconds > 0u) {
                 char message[96] = {};
                 std::snprintf(message, sizeof(message), "Match Timer captured game time %.3f seconds", gameTimeSeconds);
-                LogOnce(g_loggedTimeCapture, CoHModSDKLogLevel_Info, message);
+                LogOnce(g_loggedTimeCapture, CoHModSDKLogLevel_Debug, message);
             }
         }
     }
@@ -342,7 +338,7 @@ namespace {
         ZeroWidgetField(g_timerLabelRaw, hitAreaOffset);
         LogOnce(
             g_loggedTimerLabelDetach,
-            CoHModSDKLogLevel_Info,
+            CoHModSDKLogLevel_Debug,
             "Match Timer detached shared presentation state from the native Taskbar timer label before unload"
         );
     }
@@ -393,7 +389,6 @@ namespace {
         }
 
         void* widget = nullptr;
-#if defined(_M_IX86)
         void* createFunction = g_widgetFactoryCreateAddress;
         __asm {
             mov edi, widgetTypeName
@@ -402,9 +397,6 @@ namespace {
             call eax
             mov widget, eax
         }
-#else
-        (void)widgetTypeName;
-#endif
         return widget;
     }
 
@@ -438,7 +430,6 @@ namespace {
             return false;
         }
 
-#if defined(_M_IX86)
         void* addRenderChildFunction = g_addRenderChildAddress;
         __asm {
             mov edi, parentRenderObject
@@ -448,12 +439,6 @@ namespace {
             call eax
         }
         return true;
-#else
-        (void)parentRenderObject;
-        (void)childWidget;
-        (void)insertionIndex;
-        return false;
-#endif
     }
 
     bool AttachRenderChild(void* parentWidget, void* childWidget) {
@@ -552,6 +537,11 @@ namespace {
 
         if (g_textLabelSetMultiline != nullptr) {
             g_textLabelSetMultiline(g_timerLabelProxyStorage.data(), false);
+        }
+
+        if (g_widgetProxySetTextHAlign != nullptr) {
+            // Anchor the changing digits against the right edge of the fixed label box.
+            g_widgetProxySetTextHAlign(g_timerLabelProxyStorage.data(), kRenderProxyHAlignLeft, nullptr);
         }
 
         ApplyTimerLabelVisibility(false);
@@ -690,7 +680,7 @@ namespace {
         g_uiLabelTextInitialized = true;
         g_lastUiLabelVisible = true;
         g_lastUiLabelSeconds = totalSeconds;
-        LogOnce(g_loggedTimerLabelUpdated, CoHModSDKLogLevel_Info, "Match Timer updated the native Taskbar timer label");
+        LogOnce(g_loggedTimerLabelUpdated, CoHModSDKLogLevel_Debug, "Match Timer updated the native Taskbar timer label");
     }
 
     void __fastcall HookedWorldSimulate(void* world, void*) {
@@ -708,7 +698,6 @@ namespace {
         g_matchActive.store(true, std::memory_order_relaxed);
         g_gameOver.store(false, std::memory_order_relaxed);
         RefreshCachedMatchTime(simManager);
-        LogOnce(g_loggedWorldSimulate, CoHModSDKLogLevel_Info, "Match Timer World::Simulate hook is active");
     }
 
     void __fastcall HookedClearGameTicks(void* simManager, void*) {
@@ -728,8 +717,6 @@ namespace {
     }
 
     void __fastcall HookedScreenManagerDraw(void* screenManager, void*, float deltaSeconds) {
-        LogOnce(g_loggedUiDrawHook, CoHModSDKLogLevel_Info, "Match Timer UI::ScreenManager::Draw hook is active");
-
         const bool shouldShow = ShouldShowTimer();
         if (EnsureTaskbarTimerLabel(screenManager)) {
             ApplyTimerLabelVisibility(shouldShow);
@@ -779,8 +766,8 @@ namespace {
             return ShowAndLogError("Match Timer failed to load SimEngine.dll");
         }
 
-        g_getGameTime = ResolveExport<SimManagerGetGameTimeFn>(simEngineModule, kGetGameTimeExportName);
-        g_getWorldSimManager = ResolveExport<WorldGetSimManagerFn>(simEngineModule, kWorldGetSimManagerExportName);
+        g_getGameTime = ModSDK::Memory::ResolveExport<SimManagerGetGameTimeFn>(simEngineModule, kGetGameTimeExportName);
+        g_getWorldSimManager = ModSDK::Memory::ResolveExport<WorldGetSimManagerFn>(simEngineModule, kWorldGetSimManagerExportName);
         if ((g_getGameTime == nullptr) || (g_getWorldSimManager == nullptr)) {
             return ShowAndLogError("Match Timer failed to resolve SimManager timer exports");
         }
@@ -812,7 +799,6 @@ namespace {
             return false;
         }
 
-		ModSDK::Runtime::LogInfo("Match Timer hooked SimEngine timer exports");
         return true;
     }
 
@@ -839,6 +825,7 @@ namespace {
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxyBindExportName, g_widgetProxyBind) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxySetVisibleExportName, g_widgetProxySetVisible) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxySetEnabledExportName, g_widgetProxySetEnabled) &&
+            ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kWidgetProxySetTextHAlignExportName, g_widgetProxySetTextHAlign) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kTextLabelCtorExportName, g_textLabelCtor) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kTextLabelDtorExportName, g_textLabelDtor) &&
             ResolveRequiredExport(userInterfaceModule, kUserInterfaceModuleName, kTextLabelSetTextExportName, g_textLabelSetText) &&
@@ -851,8 +838,8 @@ namespace {
             return false;
         }
 
-        g_textLabelSetAutoSize = ResolveExport<TextLabelSetAutoSizeFn>(userInterfaceModule, kTextLabelSetAutoSizeExportName);
-        g_textLabelSetMultiline = ResolveExport<TextLabelSetMultilineFn>(userInterfaceModule, kTextLabelSetMultilineExportName);
+        g_textLabelSetAutoSize = ModSDK::Memory::ResolveExport<TextLabelSetAutoSizeFn>(userInterfaceModule, kTextLabelSetAutoSizeExportName);
+        g_textLabelSetMultiline = ModSDK::Memory::ResolveExport<TextLabelSetMultilineFn>(userInterfaceModule, kTextLabelSetMultilineExportName);
 
         const std::uintptr_t userInterfaceBase = reinterpret_cast<std::uintptr_t>(userInterfaceModule);
         g_widgetFactoryCreateAddress = reinterpret_cast<void*>(userInterfaceBase + kWidgetFactoryCreateRva);
@@ -887,7 +874,6 @@ namespace {
             return false;
         }
 
-        LogOnce(g_loggedUiHooksInstalled, CoHModSDKLogLevel_Info, "Match Timer hooked UI::ScreenManager::Draw for a native Taskbar timer");
         return true;
     }
 

@@ -13,7 +13,7 @@ Match Timer is a mod for `Company of Heroes Relaunch` built on top of `CoHModSDK
 
 ## 🎥 Preview
 
-| [![](https://ytcards.demolab.com/?id=YG_1o9S313g&title=Match+Timer+Demo&timestamp=1776170501&width=700 "Match Timer Demo")](https://www.youtube.com/watch?v=YG_1o9S313g) |
+| [![](https://ytcards.demolab.com/?id=iLNbJWbV0kc&title=Match+Timer+Demo&timestamp=1777330234&width=700 "Match Timer Demo")](https://www.youtube.com/watch?v=iLNbJWbV0kc) |
 |---|
 
 ## 🛠️ Building
